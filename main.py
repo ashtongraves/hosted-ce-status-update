@@ -6,9 +6,6 @@ import numpy as np
 import datetime
 import gspread
 
-gc = gspread.oauth()
-
-
 
 def process_worksheet(worksheet):
 
@@ -87,12 +84,10 @@ def main():
     # Authenticate with Google
     gc = gspread.oauth()
 
-
     # Open the sheet for this week
     # Calculate the date of the next monday
     today = datetime.date.today()
     next_monday = today + datetime.timedelta(days=7-today.weekday())
-    print(next_monday)
 
     # Format the date
     next_monday_fmt = next_monday.strftime('%Y-%m-%d')
