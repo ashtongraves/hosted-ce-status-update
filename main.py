@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 import datetime
 import gspread
-
+import json
+import os
 
 def process_worksheet(worksheet):
 
@@ -81,8 +82,22 @@ def process_worksheet(worksheet):
 
 
 def main():
+
     # Authenticate with Google
-    gc = gspread.oauth()
+    service_account = {
+        'type': os.environ['TYPE'],
+        'project_id': os.environ["PROJECT_ID"],
+        'private_key_id': os.environ['PRIVATE_KEY_ID'],
+        'private_key': os.environ['PRIVATE_KEY'].replace('\\n', '\n'), # Need to do because os.environ escapes the slash
+        'client_email': os.environ['CLIENT_EMAIL'],
+        'client_id': os.environ['CLIENT_ID'],
+        'auth_uri': os.environ['AUTH_URI'],
+        'token_uri': os.environ['TOKEN_URI'],
+        'auth_provider_x509_cert_url': os.environ['AUTH_PROVIDER_X509_CERT_URL'],
+        'client_x509_cert_url': os.environ['CLIENT_X509_CERT_URL'],
+        'universe_domain': os.environ['UNIVERSE_DOMAIN']
+    }
+    gc = gspread.service_account_from_dict(service_account)
 
     # Open the sheet for this week
     # Calculate the date of the next monday
@@ -93,7 +108,8 @@ def main():
     next_monday_fmt = next_monday.strftime('%Y-%m-%d')
 
     # Open the worksheet
-    worksheet = gc.open(f'OSPool CE Status - {next_monday_fmt}').sheet1
+    # TODO: come up with better way to open sheets. Would like to create a copy of the latest sheet, and get the id off of the newly created sheet and open here.
+    worksheet = gc.open_by_key('1zowqPYTpB6YGi9at8GZpRaxGx4TCfkO7Hj_2TF1ZuCY').sheet1
 
     # Process the worksheet
     process_worksheet(worksheet)
