@@ -75,10 +75,13 @@ def process_worksheet(worksheet):
           continue
       if current_value == new_value:
           print(f'Entry {entry} has not changed')
-          continue
+        #   continue
       # Ok, we need to change the value
-      print(f'Changing entry {entry} from {current_value} to {new_value}')
+      print(f'Changing entry {entry} status from {current_value} to {new_value}')
       worksheet.update_acell(status_cell, new_value)
+      print(f'Changing entry {entry} last status to {current_value}')
+      last_status_cell = f'D{idx + 2}'
+      worksheet.update_acell(last_status_cell, current_value)
 
 
 def main():
@@ -109,7 +112,7 @@ def main():
 
     # Open the worksheet
     # TODO: come up with better way to open sheets. Would like to create a copy of the latest sheet, and get the id off of the newly created sheet and open here.
-    worksheet = gc.open_by_key('1ZMOTRHVbw7Vg8g6rjqPGnAfivnBQn2_9sHY97oylT4g').sheet1
+    worksheet = gc.open_by_key('1zowqPYTpB6YGi9at8GZpRaxGx4TCfkO7Hj_2TF1ZuCY').sheet1
 
     # Process the worksheet
     process_worksheet(worksheet)
