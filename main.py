@@ -46,9 +46,9 @@ def process_worksheet(worksheet):
       df = df.fillna(0)
 
       # Get the average of the last 4 hours for the ClientCoresTotal column
-      # RRD is every 5 minutes, so 12 entries an hour, 4 hours is 48 entries
-      client_cores_avg = df['ClientCoresTotal'].tail(48).mean()
-      req_idle_avg = df['ReqIdle'].tail(48).mean()
+      # RRD is every 5 minutes, so 12 entries an hour, 48 hours is 576 entries
+      client_cores_avg = df['ClientCoresTotal'].tail(576).mean()
+      req_idle_avg = df['ReqIdle'].tail(576).mean()
 
       print(f'Entry {entry} has an average of {client_cores_avg} client cores and {req_idle_avg} requested idle glideins.')
 
@@ -109,7 +109,7 @@ def main():
 
     # Open the worksheet
     # TODO: come up with better way to open sheets. Would like to create a copy of the latest sheet, and get the id off of the newly created sheet and open here.
-    worksheet = gc.open_by_key('1zowqPYTpB6YGi9at8GZpRaxGx4TCfkO7Hj_2TF1ZuCY').sheet1
+    worksheet = gc.open_by_key('1ZMOTRHVbw7Vg8g6rjqPGnAfivnBQn2_9sHY97oylT4g').sheet1
 
     # Process the worksheet
     process_worksheet(worksheet)
