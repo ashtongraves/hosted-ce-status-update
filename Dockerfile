@@ -14,4 +14,4 @@ COPY requirements.txt /app/requirements.txt
 WORKDIR /app
 
 # Run the application
-CMD ["python3", "main.py"]
+ENTRYPOINT ["python3", "main.py"]
