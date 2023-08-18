@@ -7,11 +7,17 @@ import datetime
 import gspread
 import json
 import os
+# import pydrive2
+import time
 
 def process_worksheet(worksheet):
 
   # Column J is the name of the entry in the factory
   cells = worksheet.get('J2:J')
+
+  s = requests.Session()
+  adapter = requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1)
+  s.mount('http://', adapter)
 
   for idx, cell in enumerate(cells):
       if len(cell) == 0 or cell[0] == '':
@@ -19,7 +25,7 @@ def process_worksheet(worksheet):
 
       entry = cell[0]
       url = f'http://gfactory-2.opensciencegrid.org/factory/monitor/entry_{entry}/total/Status_Attributes.rrd'
-      response = requests.get(url)
+      response = s.get(url)
       if response.status_code != 200:
           print(f'Error {entry}: {response.status_code}')
           continue
@@ -82,6 +88,7 @@ def process_worksheet(worksheet):
       print(f'Changing entry {entry} last status to {current_value}')
       last_status_cell = f'D{idx + 2}'
       worksheet.update_acell(last_status_cell, current_value)
+      time.sleep(10)
 
 
 def main():
