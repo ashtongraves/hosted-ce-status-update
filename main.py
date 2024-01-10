@@ -71,17 +71,25 @@ def process_worksheet(old_worksheet_id, new_worksheet_id):
     df = pd.DataFrame(np.array(result[2]), columns=result[1], index=date_range)
     df = df.fillna(0)
 
-    # Get the average of the last 4 hours for the ClientCoresTotal column
     # RRD is every 5 minutes, so 12 entries an hour, 48 hours is 576 entries
-    client_cores_avg = df['ClientCoresTotal'].tail(576).mean()
-    req_idle_avg = df['ReqIdle'].tail(576).mean()
-    print(f'Entry {entry} has an average of {client_cores_avg} client cores and {req_idle_avg} requested idle glideins.')
+    time_period_hours = 48
+    total_entries = int((60 / 5) * time_period_hours)
+
+    client_cores_avg = df['ClientCoresTotal'].tail(total_entries).mean()
+    req_idle_avg = df['ReqIdle'].tail(total_entries).mean()
+    idle_glidein_job_avg = df['StatusIdle'].tail(total_entries).mean()
+    running_glidein_cores_avg = df['StatusRunningCores'].tail(total_entries).mean() 
+
+    print(f'Entry {entry}: [Client Core Avg: {client_cores_avg}, Requested Idle Gliden Avg: {req_idle_avg}, Idle Glidein Job Avg: {idle_glidein_job_avg}, Running Glidein Cores Avg: {running_glidein_cores_avg}]')
 
     new_value = 'Unknown'
     if client_cores_avg > 0:
       new_value = 'Production'
     elif req_idle_avg == 0:
-      new_value = 'No pressure'
+      if idle_glidein_job_avg > 0 and running_glidein_cores_avg == 0:
+        new_value = 'Broken'
+      else: 
+        new_value = 'No pressure'
     else:
       new_value = 'Broken'
 
