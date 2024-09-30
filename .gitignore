@@ -5,3 +5,5 @@ service-account.yaml
 restart.sh
 pod-test.yaml
 deployment-weekly.yaml
+sealed-secret.yaml
+tiger-cert.pem

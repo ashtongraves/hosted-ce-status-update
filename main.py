@@ -47,7 +47,7 @@ def process_worksheet(old_worksheet_id, new_worksheet_id):
         continue
 
     entry = cell[0]
-    url = f'http://gfactory-2.opensciencegrid.org/factory/monitor/entry_{entry}/total/Status_Attributes.rrd'
+    url = f'http://gfactory-1.osg-htc.org/factory/monitor/entry_{entry}/total/Status_Attributes.rrd'
     ferm_url = f'http://fermifactory02.fnal.gov:8319/factory/monitor/entry_{entry}/total/Status_Attributes.rrd'
     response = s.get(url)
     if response.status_code != 200:
