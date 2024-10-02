@@ -34,8 +34,8 @@ def process_worksheet(old_worksheet_id, new_worksheet_id):
   old_worksheet.update_acell('A1', 'ARCHIVED VERSION - DO NOT EDIT')
 
   worksheet = gc.open_by_key(new_worksheet_id).sheet1
-  worksheet.update_acell('B1', f'Update Script Ran {datetime.datetime.now()} CT')
-  
+  worksheet.update_acell('B1', f'Update Script Ran {datetime.datetime.now()}')
+
   # Column J is the name of the entry in the factory
   cells = worksheet.get('J2:J')
 
