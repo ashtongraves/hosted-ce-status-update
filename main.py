@@ -84,20 +84,21 @@ def process_worksheet(old_worksheet_id, new_worksheet_id):
     print(f'Entry {entry}: [Client Core Avg: {client_cores_avg}, Requested Idle Gliden Avg: {req_idle_avg}, Idle Glidein Job Avg: {idle_glidein_job_avg}, Running Glidein Cores Avg: {running_glidein_cores_avg}]')
 
     new_value = 'Unknown'
-    if client_cores_avg > 0:
-      new_value = 'Production'
-    elif req_idle_avg == 0:
-      if idle_glidein_job_avg > 0 and running_glidein_cores_avg == 0:
-        new_value = 'Broken'
-      else: 
-        new_value = 'No pressure'
+    if req_idle_avg > 0:
+      if running_glidein_cores_avg == 0:
+        new_value = 'Blocked'
+      else:
+        if client_cores_avg == 0:
+          new_value = 'Broken'
+        else:
+          new_value = 'Production'
     else:
-      new_value = 'Broken'
+      new_value = 'No pressure'
 
     status_cell = f'C{idx + 2}'
     current_value = worksheet.acell(status_cell).value
     
-    if current_value not in ['Production', 'Broken', 'No pressure']:
+    if current_value not in ['Production', 'Broken', 'No pressure', 'Blocked']:
       print(f'Entry {entry} has an invalid value of {current_value}')
     else:
       if current_value == new_value:
