@@ -18,6 +18,15 @@ The logic is then:
 2. **No Pressure**: If the requested number of glideins is less than 1
 3. **Broken**: If the average number of cores at the client is below 1, and the requested number of glideins is above 1
 
+## Topology Downtimes
+
+Before checking the factory, the script reads the current downtimes from [topology](https://topology.opensciencegrid.org/rgdowntime/xml) and matches them against the hostname column.
+
+- If a CE is in downtime and its status is one the script manages, the status is set to **Maintenance** and a note is left on the status cell.
+- When that downtime ends, the script sees the note, sets the status back to **Production**, and removes the note.
+- A **Maintenance** status set by hand (no note) is never changed by the script, with or without a downtime.
+- If topology can't be reached, downtime checks are skipped for that run.
+
 
 ## Credentials
 

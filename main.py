@@ -8,6 +8,7 @@ import gspread
 import json
 import os
 import time
+import xml.etree.ElementTree as ET
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 from pydrive2.files import GoogleDriveFile
@@ -26,6 +27,31 @@ SERVICE_ACCOUNT = {
   'universe_domain': os.environ['UNIVERSE_DOMAIN']
 }
 
+# Statuses the script is allowed to overwrite, anything else was set by hand
+AUTOMATED_STATUSES = ['Production', 'Broken', 'No pressure', 'Blocked']
+
+DOWNTIME_URL = 'https://topology.opensciencegrid.org/rgdowntime/xml'
+# Note left on the status cell so we know the Maintenance status came from topology and not a person
+DOWNTIME_NOTE = 'Set to Maintenance by update script because of a topology downtime'
+
+def get_downtime_hosts():
+  # Returns the set of CE hostnames currently in downtime, or None if topology couldn't be read
+  try:
+    response = requests.get(DOWNTIME_URL, timeout=60)
+    response.raise_for_status()
+    root = ET.fromstring(response.content)
+  except (requests.RequestException, ET.ParseError) as e:
+    print(f'Unable to get downtimes from topology, skipping downtime checks: {e}')
+    return None
+
+  hosts = set()
+  for downtime in root.findall('./CurrentDowntimes/Downtime'):
+    services = [service.findtext('Name') for service in downtime.findall('./Services/Service')]
+    if 'CE' not in services:
+      continue
+    hosts.add((downtime.findtext('ResourceFQDN') or '').strip().lower())
+  return hosts
+
 def process_worksheet(old_worksheet_id, new_worksheet_id):
   gc = gspread.service_account_from_dict(SERVICE_ACCOUNT)
   
@@ -36,18 +62,48 @@ def process_worksheet(old_worksheet_id, new_worksheet_id):
   worksheet = gc.open_by_key(new_worksheet_id).sheet1
   worksheet.update_acell('B1', f'Update Script Ran {datetime.datetime.now()}')
 
-  # Column J is the name of the entry in the factory
-  cells = worksheet.get('J2:J')
+  downtime_hosts = get_downtime_hosts()
+
+  # Column B is the CE hostname, column J is the name of the entry in the factory
+  rows = worksheet.get('B2:J')
 
   s = requests.Session()
   adapter = requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1)
   s.mount('http://', adapter)
 
-  for idx, cell in enumerate(cells):
-    if len(cell) == 0 or cell[0] == '':
+  for idx, row in enumerate(rows):
+    if len(row) < 9 or row[8].strip() == '':
         continue
 
-    entry = cell[0]
+    hostname = row[0].strip().lower()
+    entry = row[8].strip()
+    status_cell = f'C{idx + 2}'
+    last_status_cell = f'D{idx + 2}'
+
+    if downtime_hosts is not None:
+      if hostname in downtime_hosts:
+        current_value = worksheet.acell(status_cell).value
+        if current_value in AUTOMATED_STATUSES:
+          print(f'Entry {entry} is in topology downtime, changing status from {current_value} to Maintenance')
+          worksheet.update_acell(status_cell, 'Maintenance')
+          worksheet.update_acell(last_status_cell, current_value)
+          worksheet.update_note(status_cell, DOWNTIME_NOTE)
+        else:
+          print(f'Entry {entry} is in topology downtime, leaving status as {current_value}')
+        time.sleep(10)
+        continue
+
+      if worksheet.get_note(status_cell) == DOWNTIME_NOTE:
+        # The downtime we set Maintenance for has ended
+        worksheet.clear_note(status_cell)
+        current_value = worksheet.acell(status_cell).value
+        if current_value == 'Maintenance':
+          print(f'Entry {entry} topology downtime has ended, changing status from Maintenance to Production')
+          worksheet.update_acell(status_cell, 'Production')
+          worksheet.update_acell(last_status_cell, current_value)
+          time.sleep(10)
+          continue
+
     url = f'http://gfactory-1.osg-htc.org/factory/monitor/entry_{entry}/total/Status_Attributes.rrd'
     ferm_url = f'http://fermifactory02.fnal.gov:8319/factory/monitor/entry_{entry}/total/Status_Attributes.rrd'
     response = s.get(url)
@@ -95,10 +151,9 @@ def process_worksheet(old_worksheet_id, new_worksheet_id):
     else:
       new_value = 'No pressure'
 
-    status_cell = f'C{idx + 2}'
     current_value = worksheet.acell(status_cell).value
-    
-    if current_value not in ['Production', 'Broken', 'No pressure', 'Blocked']:
+
+    if current_value not in AUTOMATED_STATUSES:
       print(f'Entry {entry} has an invalid value of {current_value}')
     else:
       if current_value == new_value:
@@ -108,7 +163,6 @@ def process_worksheet(old_worksheet_id, new_worksheet_id):
       worksheet.update_acell(status_cell, new_value)
 
       print(f'Changing entry {entry} last status to {current_value}')
-      last_status_cell = f'D{idx + 2}'
       worksheet.update_acell(last_status_cell, current_value)
 
     # We're sleeping so we don't overload the api and get rate limited
