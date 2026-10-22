@@ -28,6 +28,25 @@ Before checking the factory, the script reads the current downtimes from [topolo
 - If topology can't be reached, downtime checks are skipped for that run.
 
 
+## Testing
+
+The tests mock Google Sheets, the factory, and topology, so they don't need credentials or network access:
+
+```
+pip install -r requirements-dev.txt
+pytest
+```
+
+They also run on every pull request through GitHub Actions.
+
+To try a change against a real sheet without touching the weekly report, make a copy of the current `OSPool CE Status` spreadsheet in the shared drive (so the service account can edit it), then run only the update step against that copy:
+
+```
+python3 -c "import main; main.process_worksheet('<copy id>', '<copy id>')"
+```
+
+This skips creating next week's sheet. It does write `ARCHIVED VERSION - DO NOT EDIT` into A1 of the copy.
+
 ## Credentials
 
 It uses gspread to process the spreadsheet.  Read the gspread credential manual: https://docs.gspread.org/en/v5.4.0/oauth2.html
