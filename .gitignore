@@ -7,3 +7,5 @@ pod-test.yaml
 deployment-weekly.yaml
 sealed-secret.yaml
 tiger-cert.pem
+__pycache__/
+.pytest_cache/
